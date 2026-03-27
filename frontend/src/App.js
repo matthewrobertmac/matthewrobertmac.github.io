@@ -1,54 +1,50 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import TopNav from './components/TopNav';
+import HeroSection from './components/HeroSection';
+import PDFReaderSection from './components/PDFReaderSection';
+import ThemesSection from './components/ThemesSection';
+import Footer from './components/Footer';
+import { Toaster } from './components/ui/sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+export default function App() {
+  const [bookData, setBookData] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('diia-dark-mode');
+    if (saved !== null) return JSON.parse(saved);
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
   useEffect(() => {
-    helloWorldApi();
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('diia-dark-mode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/book`)
+      .then(r => r.json())
+      .then(data => setBookData(data))
+      .catch(err => console.error('Failed to load book metadata', err));
   }, []);
 
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+  const toggleDarkMode = () => setDarkMode(prev => !prev);
 
-function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <TopNav darkMode={darkMode} onToggleDark={toggleDarkMode} bookData={bookData} />
+      <main>
+        <HeroSection bookData={bookData} />
+        <PDFReaderSection bookData={bookData} />
+        <ThemesSection bookData={bookData} />
+      </main>
+      <Footer bookData={bookData} />
+      <Toaster position="bottom-right" />
     </div>
   );
 }
-
-export default App;

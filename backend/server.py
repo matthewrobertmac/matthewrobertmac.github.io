@@ -1,89 +1,135 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+import httpx
 import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
+from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime
 
+app = FastAPI(title="Diia Thesis API", version="1.0.0")
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# Create the main app without a prefix
-app = FastAPI()
-
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
-
-
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
-app.include_router(api_router)
-
+# CORS
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# MongoDB
+MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+DB_NAME = os.environ.get("DB_NAME", "test_database")
+client = AsyncIOMotorClient(MONGO_URL)
+db = client[DB_NAME]
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+PDF_URL = "https://customer-assets.emergentagent.com/job_35dfb78f-7ed9-4c3b-b6b1-f2802659a17f/artifacts/kfojc4e5_The_Diia_Thesis_Minimal.pdf"
+
+BOOK_METADATA = {
+    "title": "The Diia Thesis",
+    "subtitle": "AI, Digital Government, and the Future of Civic Intelligence — From Ukraine to the World",
+    "author": "Civic Intelligence Research Program",
+    "year": 2024,
+    "pages": 160,
+    "language": "English",
+    "license": "Academic Research — Open Access",
+    "pdf_url": PDF_URL,
+    "description": (
+        "A rigorous academic thesis arguing that Ukraine's Diia platform represents "
+        "a pioneering global laboratory for civic artificial intelligence. Drawing on "
+        "philosophical traditions from Marx, Wojtyla, and Cossack democratic heritage, "
+        "it examines whether digital government can genuinely serve human dignity — "
+        "or become a tool for surveillance and control."
+    ),
+    "themes": [
+        {
+            "id": "civic-ai",
+            "title": "Civic AI & Digital Government",
+            "description": "Ukraine's Diia platform as a global model for citizen-first artificial intelligence in public service delivery.",
+            "tag": "Digital Governance",
+            "icon": "cpu"
+        },
+        {
+            "id": "hromada",
+            "title": "Hromada: Community Self-Governance",
+            "description": "The Ukrainian concept of hromada — collective community agency — as the normative ideal guiding digital transformation.",
+            "tag": "Political Philosophy",
+            "icon": "users"
+        },
+        {
+            "id": "dignity",
+            "title": "Human Dignity & Participation",
+            "description": "Synthesizing Wojtyla's philosophy of participation with Marxian alienation theory to evaluate citizen-state digital relationships.",
+            "tag": "Ethics",
+            "icon": "shield"
+        },
+        {
+            "id": "resilience",
+            "title": "War-Time Resilience",
+            "description": "Ukraine's digital transformation under active conflict — how crisis accelerates civic technology and tests institutional design.",
+            "tag": "War-time Governance",
+            "icon": "zap"
+        },
+        {
+            "id": "honest-ai",
+            "title": "Honest AI & Transparency",
+            "description": "AI systems must report uncertainty rather than fabricate answers. Transparency and accountability as foundational civic values.",
+            "tag": "AI Ethics",
+            "icon": "eye"
+        },
+        {
+            "id": "linguistic-sovereignty",
+            "title": "Linguistic Sovereignty",
+            "description": "Developing AI models that preserve and process the Ukrainian language — linking technological capacity to national identity.",
+            "tag": "Cultural Rights",
+            "icon": "globe"
+        },
+        {
+            "id": "surveillance",
+            "title": "Democracy vs. Surveillance",
+            "description": "Critical engagement with Zuboff, Morozov, and Eubanks on algorithmic discrimination, surveillance capitalism, and authoritarian creep.",
+            "tag": "Critical Theory",
+            "icon": "alert-triangle"
+        },
+        {
+            "id": "institutional-design",
+            "title": "Institutional Design",
+            "description": "Technology is not neutral: the political valence of digital government is determined by institutional architecture, not the code itself.",
+            "tag": "Institutional Design",
+            "icon": "building"
+        }
+    ],
+    "comparisons": ["Estonia", "India", "China", "Singapore", "Rwanda", "Brazil"],
+    "updated_at": "2024-01-01T00:00:00Z"
+}
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "service": "diia-thesis-api", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/book")
+async def get_book():
+    return BOOK_METADATA
+
+
+@app.get("/api/pdf")
+async def proxy_pdf():
+    """Proxy the PDF to avoid CORS issues."""
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client_http:
+        try:
+            response = await client_http.get(PDF_URL)
+            if response.status_code == 200:
+                return StreamingResponse(
+                    iter([response.content]),
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": "inline; filename=The_Diia_Thesis.pdf",
+                        "Access-Control-Allow-Origin": "*",
+                    }
+                )
+            else:
+                raise HTTPException(status_code=response.status_code, detail="Failed to fetch PDF")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
