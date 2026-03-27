@@ -1,26 +1,18 @@
 [
   {
-    "content": "Phase 2: Get design guidelines from design agent",
+    "content": "Redesign: Complete light Cossack-themed overhaul of all components",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Install required frontend dependencies (react-pdf-viewer)",
+    "content": "Redesign: Implement page-flip animation for PDF navigation",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend implementation (FastAPI metadata endpoints)",
+    "content": "Redesign: Add Cossack paintings and Ukrainian imagery throughout",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Frontend implementation (hero, PDF viewer, themes, nav)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: All user stories covered in Development",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: End-to-end testing using Testing Agent",
+    "content": "Redesign: End-to-end testing of new design",
     "status": "completed"
   }
 ]
