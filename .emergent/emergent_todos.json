@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Phase 2: Get design guidelines from design agent",
+    "status": "in_progress"
+  },
+  {
+    "content": "Phase 2: Install required frontend dependencies (react-pdf-viewer)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Backend implementation (FastAPI metadata endpoints)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Frontend implementation (hero, PDF viewer, themes, nav)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: End-to-end testing using Testing Agent",
+    "status": "pending"
+  }
+]
