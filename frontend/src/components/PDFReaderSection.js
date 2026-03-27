@@ -1,30 +1,29 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Download,
-  ExternalLink,
-  RefreshCw,
-  FileText,
+  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2,
+  Download, ExternalLink, RefreshCw, FileText, BookOpen,
 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Skeleton } from './ui/skeleton';
-import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
 
-// Worker is served from /public/pdf.worker.mjs (copied from pdfjs-dist during build)
-// react-pdf sets workerSrc = 'pdf.worker.mjs' internally, which resolves to our public file
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const PDF_PROXY_URL = `${BACKEND_URL}/api/pdf`;
+
+// Page-flip animation variants
+const flipVariants = {
+  enterFromRight: { rotateY: 60, opacity: 0, x: 40 },
+  enterFromLeft: { rotateY: -60, opacity: 0, x: -40 },
+  center: { rotateY: 0, opacity: 1, x: 0 },
+  exitToLeft: { rotateY: -60, opacity: 0, x: -40 },
+  exitToRight: { rotateY: 60, opacity: 0, x: 40 },
+};
+
+// Cossack decoration
+const COSSACK_STEPPE = 'https://images.unsplash.com/photo-1684091484618-60924933854c?crop=entropy&cs=srgb&fm=jpg&q=75&w=400';
 
 export default function PDFReaderSection({ bookData }) {
   const [numPages, setNumPages] = useState(null);
@@ -32,201 +31,257 @@ export default function PDFReaderSection({ bookData }) {
   const [scale, setScale] = useState(1.0);
   const [fitWidth, setFitWidth] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [loadingPage, setLoadingPage] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [direction, setDirection] = useState(1); // 1 = forward, -1 = back
+  const [animKey, setAnimKey] = useState(0);
+  const [inputPage, setInputPage] = useState('1');
   const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(800);
 
-  const pdfUrl = PDF_PROXY_URL;
+  const pdfUrl = `${BACKEND_URL}/api/pdf`;
   const directUrl = bookData?.pdf_url || '#';
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - 64);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }) => {
     setNumPages(numPages);
     setLoadError(false);
-    setLoadingPage(false);
+    setIsLoading(false);
   }, []);
 
   const onDocumentLoadError = useCallback((err) => {
     console.error('PDF load error:', err);
     setLoadError(true);
-    setLoadingPage(false);
-    toast.error('Could not load the PDF. Please try opening it directly.');
+    setIsLoading(false);
+    toast.error('Could not load PDF. Try opening directly.');
   }, []);
 
-  const prevPage = () => {
-    setPageNumber(p => Math.max(1, p - 1));
-    setLoadingPage(true);
+  const goToPage = (newPage, dir) => {
+    if (newPage < 1 || newPage > (numPages || 1)) return;
+    setDirection(dir);
+    setAnimKey(k => k + 1);
+    setPageNumber(newPage);
+    setInputPage(String(newPage));
   };
 
-  const nextPage = () => {
-    setPageNumber(p => Math.min(numPages || 1, p + 1));
-    setLoadingPage(true);
-  };
+  const prevPage = () => goToPage(pageNumber - 1, -1);
+  const nextPage = () => goToPage(pageNumber + 1, 1);
 
-  const zoomIn = () => {
-    setScale(s => Math.min(s + 0.25, 3.0));
-    setFitWidth(false);
-  };
-
-  const zoomOut = () => {
-    setScale(s => Math.max(s - 0.25, 0.5));
-    setFitWidth(false);
-  };
-
-  const handleFitWidth = () => {
-    setFitWidth(true);
-    setScale(1.0);
-  };
-
-  const handlePageInput = (e) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val) && val >= 1 && val <= (numPages || 1)) {
-      setPageNumber(val);
-      setLoadingPage(true);
+  const handleInputChange = (e) => setInputPage(e.target.value);
+  const handleInputSubmit = (e) => {
+    if (e.key === 'Enter') {
+      const val = parseInt(inputPage, 10);
+      if (!isNaN(val) && val >= 1 && val <= (numPages || 1)) {
+        goToPage(val, val > pageNumber ? 1 : -1);
+      }
     }
   };
 
-  const getPageWidth = () => {
-    if (!fitWidth || !containerRef.current) return scale * 612;
-    const containerWidth = containerRef.current.offsetWidth;
-    return Math.min(containerWidth - 48, 900);
-  };
+  const zoomIn = () => { setScale(s => Math.min(s + 0.25, 3)); setFitWidth(false); };
+  const zoomOut = () => { setScale(s => Math.max(s - 0.25, 0.5)); setFitWidth(false); };
+  const handleFitWidth = () => { setFitWidth(true); setScale(1); };
+
+  const pageWidth = fitWidth ? Math.min(containerWidth, 860) : scale * 612;
+
+  const enterVariant = direction > 0 ? flipVariants.enterFromRight : flipVariants.enterFromLeft;
+  const exitVariant = direction > 0 ? flipVariants.exitToLeft : flipVariants.exitToRight;
 
   return (
     <section
       id="read"
       className="scroll-mt-nav"
       style={{
-        background: 'var(--paper-tint)',
-        borderTop: '1px solid hsl(var(--border))',
-        borderBottom: '1px solid hsl(var(--border))',
-        paddingBottom: '4rem',
+        background: '#F0EBE0',
+        borderTop: '1px solid #C4A882',
+        borderBottom: '1px solid #C4A882',
+        padding: '0 0 4rem',
       }}
     >
-      {/* Section header */}
+      {/* Section header banner */}
       <div style={{
-        maxWidth: '72rem',
-        margin: '0 auto',
-        padding: '3rem 1.5rem 2rem',
+        background: '#2C1A0E',
+        padding: '2.5rem 2.5rem 2rem',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-        >
-          <p style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '0.6875rem',
-            color: '#005BBB',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            marginBottom: '0.5rem',
-          }}>
-            Full Document
-          </p>
-          <h2 style={{
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-            fontWeight: 600,
-            color: 'hsl(var(--foreground))',
-            letterSpacing: '-0.02em',
-            marginBottom: '0.5rem',
-          }}
-            data-testid="read-section-title"
-          >
-            Read the Thesis
-          </h2>
-          <div className="ua-accent-line" style={{ marginBottom: '0.75rem' }} />
-          <p style={{
-            fontSize: '0.9rem',
-            color: 'hsl(var(--muted-foreground))',
-            maxWidth: '56ch',
-            lineHeight: 1.6,
-          }}>
-            Navigate pages using the toolbar below. Use zoom controls for your preferred reading size, or open the PDF natively in a new tab.
-          </p>
-        </motion.div>
+        {/* Embroidery top stripe */}
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, height: 5,
+          background: 'repeating-linear-gradient(90deg, #005BBB 0px, #005BBB 12px, #FFD500 12px, #FFD500 24px)',
+          opacity: 0.8,
+        }} />
+
+        {/* Steppe background image */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url(${COSSACK_STEPPE})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.08,
+        }} />
+
+        <div style={{
+          position: 'relative',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+              <BookOpen size={16} style={{ color: '#FFD500' }} />
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '0.65rem',
+                color: '#FFD500',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+              }}>
+                Full Document · {numPages ? `${numPages} pages` : 'Loading…'}
+              </span>
+            </div>
+            <h2
+              data-testid="read-section-title"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
+                fontWeight: 700,
+                color: '#FAF8F2',
+                letterSpacing: '-0.01em',
+                margin: 0,
+              }}
+            >
+              Read the Thesis
+            </h2>
+            <p style={{
+              fontFamily: "'Crimson Text', serif",
+              fontStyle: 'italic',
+              color: '#C4A882',
+              fontSize: '1rem',
+              marginTop: '4px',
+            }}>
+              Navigate with the arrows or keyboard · Use zoom for comfort
+            </p>
+          </div>
+
+          {/* Page jump */}
+          {numPages && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#8B6340', fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem' }}>Go to page:</span>
+              <input
+                type="number"
+                min={1}
+                max={numPages}
+                value={inputPage}
+                onChange={handleInputChange}
+                onKeyDown={handleInputSubmit}
+                style={{
+                  width: 56,
+                  padding: '6px 8px',
+                  background: 'rgba(250,248,242,0.1)',
+                  border: '1px solid #8B6340',
+                  borderRadius: '3px',
+                  color: '#FAF8F2',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '0.875rem',
+                  textAlign: 'center',
+                  outline: 'none',
+                }}
+              />
+              <span style={{ color: '#8B6340', fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem' }}>of {numPages}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* PDF Viewer Card */}
-      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1.5rem' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1, ease: [0.2, 0.8, 0.2, 1] }}
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
-          }}
-        >
-          {/* Sticky toolbar */}
+      {/* Main reader area */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem 0' }}>
+        <div style={{
+          background: '#FFFFFF',
+          border: '1px solid #C4A882',
+          borderRadius: '4px',
+          boxShadow: '0 4px 32px rgba(44,26,14,0.12), 0 1px 4px rgba(44,26,14,0.06)',
+          overflow: 'hidden',
+        }}>
+          {/* Toolbar */}
           <div
             data-testid="pdf-toolbar"
             style={{
               position: 'sticky',
               top: 'var(--nav-height)',
               zIndex: 20,
-              background: '#FFFFFF',
-              borderBottom: '1px solid hsl(var(--border))',
-              padding: '10px 16px',
+              background: '#FAF8F2',
+              borderBottom: '1px solid #C4A882',
+              padding: '10px 20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '8px',
+              gap: '10px',
             }}
           >
-            {/* Left: page nav */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Left: prev/next + page indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 onClick={prevPage}
                 disabled={pageNumber <= 1}
                 data-testid="pdf-toolbar-prev-page-button"
                 aria-label="Previous page"
-                title="Previous page"
+                title="Previous page (←)"
                 style={{
-                  background: 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: pageNumber <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: pageNumber <= 1 ? 0.4 : 1,
-                  color: '#334155',
                   display: 'flex',
                   alignItems: 'center',
+                  gap: '5px',
+                  padding: '7px 14px',
+                  background: pageNumber <= 1 ? 'transparent' : '#2C1A0E',
+                  border: '1px solid #C4A882',
+                  borderRadius: '3px',
+                  cursor: pageNumber <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: pageNumber <= 1 ? 0.4 : 1,
+                  color: pageNumber <= 1 ? '#8B6340' : '#FAF8F2',
+                  fontFamily: "'Crimson Text', serif",
+                  fontSize: '0.875rem',
                 }}
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} />
+                <span className="hide-xs">Prev</span>
               </button>
 
               <div
                 data-testid="pdf-page-indicator"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 12px',
+                  background: 'white',
+                  border: '1px solid #C4A882',
+                  borderRadius: '3px',
+                  minWidth: '110px',
+                  justifyContent: 'center',
+                }}
               >
-                <input
-                  type="number"
-                  min={1}
-                  max={numPages || 1}
-                  value={pageNumber}
-                  onChange={handlePageInput}
-                  aria-label="Page number"
-                  style={{
-                    width: '48px',
-                    textAlign: 'center',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '5px',
-                    padding: '4px 6px',
-                    fontSize: '0.8125rem',
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    color: '#334155',
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: "'IBM Plex Mono', monospace" }}>
-                  / {numPages || '—'}
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '0.8125rem',
+                  color: '#2C1A0E',
+                  fontWeight: 500,
+                }}>
+                  {pageNumber} <span style={{ color: '#C4A882' }}>of</span> {numPages || '—'}
                 </span>
               </div>
 
@@ -235,24 +290,51 @@ export default function PDFReaderSection({ bookData }) {
                 disabled={!numPages || pageNumber >= numPages}
                 data-testid="pdf-toolbar-next-page-button"
                 aria-label="Next page"
-                title="Next page"
+                title="Next page (→)"
                 style={{
-                  background: 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: (!numPages || pageNumber >= numPages) ? 'not-allowed' : 'pointer',
-                  opacity: (!numPages || pageNumber >= numPages) ? 0.4 : 1,
-                  color: '#334155',
                   display: 'flex',
                   alignItems: 'center',
+                  gap: '5px',
+                  padding: '7px 14px',
+                  background: (!numPages || pageNumber >= numPages) ? 'transparent' : '#2C1A0E',
+                  border: '1px solid #C4A882',
+                  borderRadius: '3px',
+                  cursor: (!numPages || pageNumber >= numPages) ? 'not-allowed' : 'pointer',
+                  opacity: (!numPages || pageNumber >= numPages) ? 0.4 : 1,
+                  color: (!numPages || pageNumber >= numPages) ? '#8B6340' : '#FAF8F2',
+                  fontFamily: "'Crimson Text', serif",
+                  fontSize: '0.875rem',
                 }}
               >
-                <ChevronRight size={16} />
+                <span className="hide-xs">Next</span>
+                <ChevronRight size={15} />
               </button>
             </div>
 
-            {/* Right: zoom + open + download */}
+            {/* Center: progress bar */}
+            {numPages && (
+              <div style={{ flex: 1, maxWidth: 240, display: 'flex', flexDirection: 'column', gap: '3px' }} className="hide-sm">
+                <div style={{ height: 4, background: '#F0EBE0', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #005BBB, #FFD500)',
+                    borderRadius: 2,
+                    width: `${(pageNumber / numPages) * 100}%`,
+                    transition: 'width 300ms ease',
+                  }} />
+                </div>
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '0.6rem',
+                  color: '#C4A882',
+                  textAlign: 'center',
+                }}>
+                  {Math.round((pageNumber / numPages) * 100)}% read
+                </span>
+              </div>
+            )}
+
+            {/* Right: zoom + utilities */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
                 onClick={zoomOut}
@@ -260,26 +342,16 @@ export default function PDFReaderSection({ bookData }) {
                 data-testid="pdf-toolbar-zoom-out-button"
                 aria-label="Zoom out"
                 title="Zoom out"
-                style={{
-                  background: 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: scale <= 0.5 ? 'not-allowed' : 'pointer',
-                  opacity: scale <= 0.5 ? 0.4 : 1,
-                  color: '#334155',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
+                style={toolbarBtnStyle(scale <= 0.5)}
               >
-                <ZoomOut size={15} />
+                <ZoomOut size={14} />
               </button>
 
               <span style={{
                 fontSize: '0.6875rem',
-                color: '#94A3B8',
+                color: '#8B6340',
                 fontFamily: "'IBM Plex Mono', monospace",
-                minWidth: '42px',
+                minWidth: '40px',
                 textAlign: 'center',
               }}>
                 {fitWidth ? 'Fit' : `${Math.round(scale * 100)}%`}
@@ -291,19 +363,9 @@ export default function PDFReaderSection({ bookData }) {
                 data-testid="pdf-toolbar-zoom-in-button"
                 aria-label="Zoom in"
                 title="Zoom in"
-                style={{
-                  background: 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: scale >= 3.0 ? 'not-allowed' : 'pointer',
-                  opacity: scale >= 3.0 ? 0.4 : 1,
-                  color: '#334155',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
+                style={toolbarBtnStyle(scale >= 3.0)}
               >
-                <ZoomIn size={15} />
+                <ZoomIn size={14} />
               </button>
 
               <button
@@ -312,20 +374,16 @@ export default function PDFReaderSection({ bookData }) {
                 aria-label="Fit to width"
                 title="Fit to width"
                 style={{
-                  background: fitWidth ? '#005BBB' : 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: 'pointer',
-                  color: fitWidth ? '#FFFFFF' : '#334155',
-                  display: 'flex',
-                  alignItems: 'center',
+                  ...toolbarBtnStyle(false),
+                  background: fitWidth ? '#005BBB' : 'transparent',
+                  color: fitWidth ? '#FFFFFF' : '#5C3D1E',
+                  borderColor: fitWidth ? '#005BBB' : '#C4A882',
                 }}
               >
-                <Maximize2 size={14} />
+                <Maximize2 size={13} />
               </button>
 
-              <div style={{ width: 1, height: 24, background: 'hsl(var(--border))', margin: '0 4px' }} />
+              <div style={{ width: 1, height: 22, background: '#C4A882', margin: '0 4px' }} />
 
               <a
                 href={directUrl}
@@ -334,19 +392,9 @@ export default function PDFReaderSection({ bookData }) {
                 data-testid="pdf-toolbar-open-tab-button"
                 aria-label="Open in new tab"
                 title="Open in new tab"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: 'none',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  padding: '6px 8px',
-                  cursor: 'pointer',
-                  color: '#334155',
-                  textDecoration: 'none',
-                }}
+                style={{ ...toolbarBtnStyle(false), textDecoration: 'none' }}
               >
-                <ExternalLink size={14} />
+                <ExternalLink size={13} />
               </a>
 
               <a
@@ -358,109 +406,76 @@ export default function PDFReaderSection({ bookData }) {
                 aria-label="Download PDF"
                 title="Download PDF"
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 12px',
                   background: '#005BBB',
                   border: '1px solid #005BBB',
-                  borderRadius: '6px',
-                  padding: '6px 10px',
-                  cursor: 'pointer',
+                  borderRadius: '3px',
                   color: '#FFFFFF',
                   textDecoration: 'none',
-                  gap: '5px',
                   fontSize: '0.75rem',
-                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontFamily: "'Crimson Text', serif",
+                  fontWeight: 600,
                 }}
               >
-                <Download size={13} />
+                <Download size={12} />
                 <span className="hide-xs">Download</span>
               </a>
             </div>
           </div>
 
-          {/* PDF Canvas Area */}
+          {/* PDF canvas area */}
           <div
             ref={containerRef}
-            className="pdf-container"
             style={{
-              background: '#F1F5F9',
-              padding: '24px',
+              background: '#E8E2D6',
+              padding: '32px',
+              minHeight: '700px',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'flex-start',
-              minHeight: '600px',
-              overflow: 'auto',
+              overflow: 'hidden',
             }}
           >
             {loadError ? (
-              <div style={{ maxWidth: '480px', width: '100%', margin: '3rem auto' }}>
-                <Alert
-                  data-testid="pdf-load-error-alert"
-                  style={{ border: '1px solid #FCA5A5', background: '#FEF2F2' }}
-                >
-                  <AlertDescription style={{ color: '#991B1B' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <FileText size={18} />
-                      <strong>Unable to load the embedded PDF reader.</strong>
-                    </div>
-                    <p style={{ marginBottom: '16px', fontSize: '0.875rem', color: '#7F1D1D' }}>
-                      The PDF can still be read directly in your browser or downloaded below.
-                    </p>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <a
-                        href={directUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 16px',
-                          background: '#005BBB',
-                          color: '#FFFFFF',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                        }}
-                      >
-                        <ExternalLink size={14} />
-                        Open in Browser
-                      </a>
-                      <button
-                        onClick={() => { setLoadError(false); setLoadingPage(true); }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 16px',
-                          background: 'transparent',
-                          color: '#005BBB',
-                          border: '1px solid #005BBB',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                        }}
-                      >
-                        <RefreshCw size={14} />
-                        Retry
-                      </button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
+              <div style={{ maxWidth: 480, width: '100%', margin: '3rem auto', textAlign: 'center' }}>
+                <div data-testid="pdf-load-error-alert" style={{
+                  background: '#FFFBF0',
+                  border: '1px solid #C4A882',
+                  borderRadius: '6px',
+                  padding: '2rem',
+                }}>
+                  <FileText size={32} style={{ color: '#8B6340', marginBottom: '1rem' }} />
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', color: '#2C1A0E', fontWeight: 600, marginBottom: '0.5rem' }}>
+                    Unable to Load PDF Reader
+                  </p>
+                  <p style={{ fontFamily: "'Crimson Text', serif", color: '#5C3D1E', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                    The document is still available to read in your browser or download below.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <a href={directUrl} target="_blank" rel="noreferrer" style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      padding: '9px 20px', background: '#2C1A0E', color: '#FAF8F2',
+                      borderRadius: '3px', textDecoration: 'none', fontFamily: "'Crimson Text', serif", fontSize: '0.9375rem',
+                    }}>
+                      <ExternalLink size={14} /> Open in Browser
+                    </a>
+                    <button onClick={() => { setLoadError(false); setIsLoading(true); }} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      padding: '9px 20px', background: 'transparent', color: '#005BBB',
+                      border: '1px solid #005BBB', borderRadius: '3px', cursor: 'pointer',
+                      fontFamily: "'Crimson Text', serif", fontSize: '0.9375rem',
+                    }}>
+                      <RefreshCw size={14} /> Retry
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div style={{ width: '100%', maxWidth: '900px' }}>
-                {loadingPage && !numPages && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '640px', margin: '0 auto' }}>
-                    <Skeleton style={{ height: '800px', width: '100%', borderRadius: '8px' }} />
-                    <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94A3B8', fontFamily: "'IBM Plex Mono', monospace" }}>
-                      Loading thesis…
-                    </p>
-                  </div>
-                )}
-
+              <div style={{ width: '100%', maxWidth: 900 }}>
+                {/* Hidden Document component to load PDF */}
                 <Document
                   file={pdfUrl}
                   onLoadSuccess={onDocumentLoadSuccess}
@@ -468,42 +483,222 @@ export default function PDFReaderSection({ bookData }) {
                   loading={null}
                   error={null}
                 >
-                  <Page
-                    pageNumber={pageNumber}
-                    width={getPageWidth()}
-                    scale={fitWidth ? 1 : scale}
-                    onLoadSuccess={() => setLoadingPage(false)}
-                    onLoadError={(e) => console.error('Page load error', e)}
-                    renderAnnotationLayer={true}
-                    renderTextLayer={true}
-                    loading={
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '640px', margin: '0 auto' }}>
-                        <Skeleton style={{ height: '800px', width: '640px', borderRadius: '8px', maxWidth: '100%' }} />
-                      </div>
-                    }
-                  />
+                  {/* Page flip container */}
+                  <div className="pdf-flip-container" style={{ position: 'relative' }}>
+                    <AnimatePresence mode="wait" custom={direction}>
+                      <motion.div
+                        key={animKey}
+                        initial={enterVariant}
+                        animate={flipVariants.center}
+                        exit={exitVariant}
+                        transition={{
+                          duration: 0.38,
+                          ease: [0.4, 0.0, 0.2, 1],
+                        }}
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transformOrigin: 'center center',
+                          boxShadow: '0 8px 32px rgba(44,26,14,0.18), 4px 4px 0 rgba(44,26,14,0.08)',
+                          background: '#FFFFFF',
+                        }}
+                      >
+                        {/* Loading skeleton */}
+                        {isLoading && !numPages && (
+                          <div style={{
+                            width: '100%',
+                            height: 800,
+                            background: 'linear-gradient(90deg, #F0EBE0 25%, #FAF8F2 50%, #F0EBE0 75%)',
+                            backgroundSize: '200% 100%',
+                            animation: 'shimmer 1.5s infinite',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', color: '#C4A882', fontSize: '1.1rem' }}>
+                              Loading thesis…
+                            </p>
+                          </div>
+                        )}
+                        <Page
+                          pageNumber={pageNumber}
+                          width={pageWidth}
+                          scale={fitWidth ? 1 : scale}
+                          onLoadSuccess={() => setIsLoading(false)}
+                          renderAnnotationLayer={true}
+                          renderTextLayer={true}
+                          loading={
+                            <div style={{
+                              width: pageWidth || 600,
+                              height: 800,
+                              background: 'linear-gradient(90deg, #F0EBE0 25%, #FAF8F2 50%, #F0EBE0 75%)',
+                              backgroundSize: '200% 100%',
+                              animation: 'shimmer 1.5s infinite',
+                            }} />
+                          }
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {/* Previous page click zone */}
+                    <button
+                      onClick={prevPage}
+                      disabled={pageNumber <= 1}
+                      aria-label="Previous page"
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '15%',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: pageNumber <= 1 ? 'default' : 'pointer',
+                        opacity: 0,
+                        zIndex: 10,
+                      }}
+                    />
+                    {/* Next page click zone */}
+                    <button
+                      onClick={nextPage}
+                      disabled={!numPages || pageNumber >= numPages}
+                      aria-label="Next page"
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '15%',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: (!numPages || pageNumber >= numPages) ? 'default' : 'pointer',
+                        opacity: 0,
+                        zIndex: 10,
+                      }}
+                    />
+                  </div>
                 </Document>
               </div>
             )}
           </div>
-        </motion.div>
 
-        {/* Aria live region for page changes */}
-        <div
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-          style={{ position: 'absolute', left: '-9999px' }}
-        >
-          Page {pageNumber} of {numPages || 'unknown'}
+          {/* Bottom nav bar */}
+          <div style={{
+            background: '#FAF8F2',
+            borderTop: '1px solid #C4A882',
+            padding: '12px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+          }}>
+            {/* Keyboard shortcuts hint */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}>
+              <button
+                onClick={prevPage}
+                disabled={pageNumber <= 1}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 20px',
+                  background: pageNumber <= 1 ? 'transparent' : '#2C1A0E',
+                  border: '1px solid #C4A882',
+                  borderRadius: '3px',
+                  cursor: pageNumber <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: pageNumber <= 1 ? 0.4 : 1,
+                  color: pageNumber <= 1 ? '#8B6340' : '#FAF8F2',
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '0.75rem',
+                color: '#C4A882',
+                padding: '0 8px',
+              }}>
+                Page {pageNumber} of {numPages || '…'}
+              </span>
+
+              <button
+                onClick={nextPage}
+                disabled={!numPages || pageNumber >= numPages}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 20px',
+                  background: (!numPages || pageNumber >= numPages) ? 'transparent' : '#2C1A0E',
+                  border: '1px solid #C4A882',
+                  borderRadius: '3px',
+                  cursor: (!numPages || pageNumber >= numPages) ? 'not-allowed' : 'pointer',
+                  opacity: (!numPages || pageNumber >= numPages) ? 0.4 : 1,
+                  color: (!numPages || pageNumber >= numPages) ? '#8B6340' : '#FAF8F2',
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Keyboard navigation */}
+      <KeyboardNav prevPage={prevPage} nextPage={nextPage} />
+
       <style>{`
-        @media (max-width: 480px) {
-          .hide-xs { display: none; }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @media (max-width: 600px) {
+          .hide-xs { display: none !important; }
+          .hide-sm { display: none !important; }
+        }
+        @media (max-width: 900px) {
+          .hide-sm { display: none !important; }
         }
       `}</style>
     </section>
   );
+}
+
+function toolbarBtnStyle(disabled) {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '6px 8px',
+    background: 'transparent',
+    border: '1px solid #C4A882',
+    borderRadius: '3px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+    color: '#5C3D1E',
+  };
+}
+
+function KeyboardNav({ prevPage, nextPage }) {
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [prevPage, nextPage]);
+  return null;
 }

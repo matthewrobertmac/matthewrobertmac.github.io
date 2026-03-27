@@ -1,30 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import {
-  Cpu, Users, Shield, Zap, Eye, Globe, AlertTriangle, Building
-} from 'lucide-react';
+import { Cpu, Users, Shield, Zap, Eye, Globe, AlertTriangle, Building } from 'lucide-react';
 
-const ICON_MAP = {
-  cpu: Cpu,
-  users: Users,
-  shield: Shield,
-  zap: Zap,
-  eye: Eye,
-  globe: Globe,
-  'alert-triangle': AlertTriangle,
-  building: Building,
-};
-
-const TAG_COLORS = {
-  'Digital Governance': { bg: 'rgba(0,91,187,0.08)', color: '#005BBB', border: 'rgba(0,91,187,0.2)' },
-  'Political Philosophy': { bg: 'rgba(139,92,246,0.08)', color: '#7C3AED', border: 'rgba(139,92,246,0.2)' },
-  'Ethics': { bg: 'rgba(16,185,129,0.08)', color: '#065F46', border: 'rgba(16,185,129,0.25)' },
-  'War-time Governance': { bg: 'rgba(239,68,68,0.08)', color: '#B91C1C', border: 'rgba(239,68,68,0.2)' },
-  'AI Ethics': { bg: 'rgba(255,213,0,0.12)', color: '#92400E', border: 'rgba(255,213,0,0.35)' },
-  'Cultural Rights': { bg: 'rgba(14,165,233,0.08)', color: '#0369A1', border: 'rgba(14,165,233,0.22)' },
-  'Critical Theory': { bg: 'rgba(100,116,139,0.08)', color: '#334155', border: 'rgba(100,116,139,0.2)' },
-  'Institutional Design': { bg: 'rgba(0,91,187,0.06)', color: '#1E40AF', border: 'rgba(0,91,187,0.18)' },
-};
+const ICON_MAP = { cpu: Cpu, users: Users, shield: Shield, zap: Zap, eye: Eye, globe: Globe, 'alert-triangle': AlertTriangle, building: Building };
 
 const DEFAULT_THEMES = [
   { id: 'civic-ai', title: 'Civic AI & Digital Government', description: "Ukraine's Diia platform as a global model for citizen-first artificial intelligence in public service delivery.", tag: 'Digital Governance', icon: 'cpu' },
@@ -37,76 +15,85 @@ const DEFAULT_THEMES = [
   { id: 'institutional-design', title: 'Institutional Design', description: 'Technology is not neutral: the political valence of digital government is determined by institutional architecture, not the code itself.', tag: 'Institutional Design', icon: 'building' },
 ];
 
-function ThemeCard({ theme, index }) {
-  const IconComp = ICON_MAP[theme.icon] || Cpu;
-  const tagStyle = TAG_COLORS[theme.tag] || TAG_COLORS['Digital Governance'];
+const PHILOSOPHERS = [
+  { name: 'Karl Marx', tradition: 'Alienation & Labour', contribution: 'Examining how digital bureaucracy may alienate citizens from their own data and civic identity.' },
+  { name: 'Karol Wojtyla', tradition: 'Personalism', contribution: "The philosophy of participation — evaluating whether Diia enhances or diminishes citizens' subjective agency." },
+  { name: 'Cossack Tradition', tradition: 'Democratic Radical', contribution: 'Ukrainian historical model of participatory, decentralised self-governance as normative benchmark.' },
+  { name: 'Catholic Social Teaching', tradition: 'Common Good', contribution: 'Subsidiarity and the common good as standards for assessing the design of civic AI systems.' },
+];
 
+function ThemeCard({ theme, index }) {
+  const Icon = ICON_MAP[theme.icon] || Cpu;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.2, 0.8, 0.2, 1] }}
-      className="theme-card"
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.45, delay: index * 0.06, ease: [0.2, 0.8, 0.2, 1] }}
       data-testid={`theme-card-${theme.id}`}
       style={{
         background: '#FFFFFF',
-        border: '1px solid hsl(var(--border))',
-        borderRadius: '10px',
+        border: '1px solid #C4A882',
+        borderRadius: '3px',
         padding: '1.5rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.875rem',
+        gap: '0.75rem',
+        transition: 'box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease',
         cursor: 'default',
       }}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow = '0 6px 24px rgba(44,26,14,0.12)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.borderColor = '#005BBB40';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.borderColor = '#C4A882';
+      }}
     >
-      {/* Icon + Tag row */}
+      {/* Top: icon + tag */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
         <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: '8px',
-          background: 'rgba(0,91,187,0.08)',
+          width: 38, height: 38, borderRadius: '3px',
+          background: 'rgba(0,91,187,0.07)',
           border: '1px solid rgba(0,91,187,0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <IconComp size={18} color="#005BBB" />
+          <Icon size={17} color="#005BBB" />
         </div>
         <span style={{
-          padding: '3px 10px',
-          borderRadius: '4px',
-          background: tagStyle.bg,
-          border: `1px solid ${tagStyle.border}`,
-          color: tagStyle.color,
-          fontSize: '0.6875rem',
+          padding: '3px 9px',
+          border: '1px solid #C4A882',
+          borderRadius: '2px',
+          background: '#FAF8F2',
+          color: '#8B6340',
+          fontSize: '0.6rem',
           fontFamily: "'IBM Plex Mono', monospace",
-          fontWeight: 500,
-          letterSpacing: '0.03em',
+          letterSpacing: '0.05em',
           whiteSpace: 'nowrap',
+          textTransform: 'uppercase',
         }}>
           {theme.tag}
         </span>
       </div>
 
-      {/* Title */}
       <h3 style={{
-        fontFamily: "'IBM Plex Sans', sans-serif",
-        fontSize: '0.9375rem',
+        fontFamily: "'Playfair Display', serif",
+        fontSize: '1rem',
         fontWeight: 600,
-        color: 'hsl(var(--foreground))',
-        lineHeight: 1.35,
+        color: '#2C1A0E',
+        lineHeight: 1.3,
         margin: 0,
       }}>
         {theme.title}
       </h3>
 
-      {/* Description */}
       <p style={{
-        fontSize: '0.8375rem',
-        color: 'hsl(var(--muted-foreground))',
+        fontFamily: "'Crimson Text', serif",
+        fontSize: '0.9375rem',
+        color: '#5C3D1E',
         lineHeight: 1.65,
         margin: 0,
         flex: 1,
@@ -114,10 +101,9 @@ function ThemeCard({ theme, index }) {
         {theme.description}
       </p>
 
-      {/* UA accent dot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#FFD500' }} />
-        <span style={{ fontSize: '0.6875rem', color: '#94A3B8', fontFamily: "'IBM Plex Mono', monospace" }}>
+        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#FFD500' }} />
+        <span style={{ fontSize: '0.6875rem', color: '#C4A882', fontFamily: "'IBM Plex Mono', monospace" }}>
           Why it matters
         </span>
       </div>
@@ -133,61 +119,64 @@ export default function ThemesSection({ bookData }) {
       id="about"
       className="scroll-mt-nav"
       style={{
-        background: 'hsl(var(--background))',
+        background: '#FAF8F2',
         padding: '5rem 0',
-        borderTop: '1px solid hsl(var(--border))',
+        borderTop: '1px solid #C4A882',
       }}
     >
-      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1.5rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
 
-        {/* Section header */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+          transition={{ duration: 0.45 }}
           style={{ marginBottom: '3rem' }}
         >
           <p style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '0.6875rem',
+            fontSize: '0.65rem',
             color: '#005BBB',
-            letterSpacing: '0.1em',
+            letterSpacing: '0.14em',
             textTransform: 'uppercase',
             marginBottom: '0.5rem',
           }}>
             Research Themes
           </p>
           <h2 style={{
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-            fontWeight: 600,
-            color: 'hsl(var(--foreground))',
-            letterSpacing: '-0.02em',
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
+            fontWeight: 700,
+            color: '#2C1A0E',
+            letterSpacing: '-0.01em',
             marginBottom: '0.5rem',
           }}>
             About the Thesis
           </h2>
-          <div className="ua-accent-line" style={{ marginBottom: '1rem' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+            <div style={{ width: 30, height: 3, background: '#005BBB', opacity: 0.6, borderRadius: 2 }} />
+            <div style={{ width: 15, height: 3, background: '#FFD500', opacity: 0.8, borderRadius: 2 }} />
+          </div>
           <p style={{
-            fontSize: '0.9375rem',
-            color: 'hsl(var(--muted-foreground))',
-            maxWidth: '68ch',
-            lineHeight: 1.7,
+            fontFamily: "'Crimson Text', serif",
+            fontSize: '1.0625rem',
+            color: '#5C3D1E',
+            maxWidth: '66ch',
+            lineHeight: 1.72,
           }}>
             This thesis weaves together political philosophy, data science, and comparative governance to ask: can digital government genuinely serve human dignity — or does it risk becoming an instrument of control? Eight themes anchor the inquiry.
           </p>
         </motion.div>
 
-        {/* Theme grid */}
+        {/* Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
           gap: '1.25rem',
+          marginBottom: '4rem',
         }}>
-          {themes.map((theme, i) => (
-            <ThemeCard key={theme.id} theme={theme} index={i} />
-          ))}
+          {themes.map((theme, i) => <ThemeCard key={theme.id} theme={theme} index={i} />)}
         </div>
 
         {/* Philosophical foundations */}
@@ -195,47 +184,71 @@ export default function ThemesSection({ bookData }) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           style={{
-            marginTop: '3.5rem',
-            padding: '2rem',
-            background: '#0B1220',
-            borderRadius: '12px',
-            border: '1px solid rgba(0,91,187,0.3)',
+            background: '#F5F0E8',
+            border: '1px solid #C4A882',
+            borderRadius: '3px',
+            padding: '2.5rem',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
+          {/* Accent stripe */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, bottom: 0, width: 4,
+            background: 'repeating-linear-gradient(180deg, #005BBB 0px, #005BBB 12px, #FFD500 12px, #FFD500 24px)',
+            opacity: 0.6,
+          }} />
+
           <p style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '0.6875rem',
-            color: '#64748B',
+            fontSize: '0.65rem',
+            color: '#8B6340',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            marginBottom: '1rem',
+            marginBottom: '1.5rem',
+            paddingLeft: '1rem',
           }}>
             Philosophical Framework
           </p>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1.25rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '1.5rem',
+            paddingLeft: '1rem',
           }}>
-            {[
-              { name: 'Karl Marx', tradition: 'Alienation & Labour', contribution: 'Examining how digital bureaucracy may alienate citizens from their own data and civic identity.' },
-              { name: 'Karol Wojtyla', tradition: 'Personalism', contribution: "The philosophy of participation — evaluating whether Diia enhances or diminishes citizens' subjective agency." },
-              { name: 'Cossack Tradition', tradition: 'Democratic Radical', contribution: 'Ukrainian historical model of participatory, decentralised self-governance as normative benchmark.' },
-              { name: 'Catholic Social Teaching', tradition: 'Common Good', contribution: 'Subsidiarity and the common good as standards for assessing the design of civic AI systems.' },
-            ].map(({ name, tradition, contribution }) => (
+            {PHILOSOPHERS.map(({ name, tradition, contribution }) => (
               <div key={name} style={{
-                borderLeft: '2px solid rgba(0,91,187,0.4)',
+                borderLeft: '2px solid rgba(0,91,187,0.3)',
                 paddingLeft: '1rem',
               }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#F0F4FA', fontFamily: "'IBM Plex Sans', sans-serif", marginBottom: '2px' }}>
+                <p style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  color: '#2C1A0E',
+                  marginBottom: '2px',
+                }}>
                   {name}
                 </p>
-                <p style={{ fontSize: '0.6875rem', color: '#FFD500', fontFamily: "'IBM Plex Mono', monospace", marginBottom: '6px' }}>
+                <p style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '0.6rem',
+                  color: '#005BBB',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  marginBottom: '6px',
+                }}>
                   {tradition}
                 </p>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', lineHeight: 1.5 }}>
+                <p style={{
+                  fontFamily: "'Crimson Text', serif",
+                  fontSize: '0.9rem',
+                  color: '#5C3D1E',
+                  lineHeight: 1.6,
+                }}>
                   {contribution}
                 </p>
               </div>

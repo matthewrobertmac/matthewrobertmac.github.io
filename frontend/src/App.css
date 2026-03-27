@@ -1,4 +1,5 @@
-/* App-level styles */
+/* Light Cossack theme - minimal overrides */
 .App {
   min-height: 100vh;
+  background-color: #FAF8F2;
 }

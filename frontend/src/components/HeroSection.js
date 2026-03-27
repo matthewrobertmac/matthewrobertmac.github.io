@@ -1,35 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { BookOpen, Download, ChevronDown } from 'lucide-react';
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1], delay },
-  }),
+  hidden: { opacity: 0, y: 20 },
+  visible: (d = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.2, 0.8, 0.2, 1], delay: d } }),
 };
 
+// Cossack images
+const HERO_PAINTING = 'https://images.unsplash.com/photo-1719498481776-8616359f0df4?crop=entropy&cs=srgb&fm=jpg&q=85&w=800';
+const STEPPE_IMG = 'https://images.unsplash.com/photo-1647462028480-811fd621c216?crop=entropy&cs=srgb&fm=jpg&q=85&w=1400';
+
 const THEME_PILLS = [
-  'Civic AI',
-  'Hromada',
-  'Honest AI',
-  'Digital Sovereignty',
-  'Human Dignity',
-  'Resilience',
-  'Transparency',
+  { label: 'Civic AI', color: '#005BBB' },
+  { label: 'Hromada', color: '#8B4513' },
+  { label: 'Honest AI', color: '#005BBB' },
+  { label: 'Resilience', color: '#8B4513' },
+  { label: 'Digital Sovereignty', color: '#005BBB' },
+  { label: 'Human Dignity', color: '#8B4513' },
 ];
 
 export default function HeroSection({ bookData }) {
   const scrollToRead = () => {
     const el = document.getElementById('read');
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 64;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 68, behavior: 'smooth' });
   };
 
   const pdfUrl = bookData?.pdf_url || '#';
@@ -37,347 +31,297 @@ export default function HeroSection({ bookData }) {
   return (
     <section
       id="home"
-      className="noise scroll-mt-nav"
+      className="scroll-mt-nav embroidery-border"
       style={{
         position: 'relative',
-        minHeight: '92vh',
-        display: 'flex',
-        alignItems: 'center',
-        background: '#0B1220',
         overflow: 'hidden',
+        background: '#FAF8F2',
+        minHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      {/* Blue radial glow */}
-      <div style={{
-        position: 'absolute',
-        top: '-10%',
-        left: '-5%',
-        width: '60%',
-        height: '70%',
-        background: 'radial-gradient(ellipse at 20% 10%, rgba(0,91,187,0.32), transparent 55%)',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }} />
-      {/* Yellow radial glow */}
-      <div style={{
-        position: 'absolute',
-        top: '5%',
-        right: '5%',
-        width: '45%',
-        height: '50%',
-        background: 'radial-gradient(ellipse at 80% 20%, rgba(255,213,0,0.12), transparent 60%)',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }} />
-      {/* Grid pattern */}
+      {/* Ukrainian steppe landscape panorama */}
       <div style={{
         position: 'absolute',
         inset: 0,
-        backgroundImage: `
-          linear-gradient(rgba(0,91,187,0.06) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0,91,187,0.06) 1px, transparent 1px)
-        `,
-        backgroundSize: '48px 48px',
-        pointerEvents: 'none',
+        backgroundImage: `url(${STEPPE_IMG})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 40%',
+        opacity: 0.12,
+        zIndex: 0,
+      }} />
+
+      {/* Gradient overlay to keep text readable */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(180deg, rgba(250,248,242,0.85) 0%, rgba(250,248,242,0.7) 50%, rgba(250,248,242,0.95) 100%)',
         zIndex: 1,
+      }} />
+
+      {/* Ornamental side decorations - left */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: '6px',
+        background: 'repeating-linear-gradient(180deg, #005BBB 0px, #005BBB 20px, #FFD500 20px, #FFD500 40px)',
+        opacity: 0.6,
+        zIndex: 2,
+      }} />
+      {/* Right */}
+      <div style={{
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: '6px',
+        background: 'repeating-linear-gradient(180deg, #FFD500 0px, #FFD500 20px, #005BBB 20px, #005BBB 40px)',
+        opacity: 0.6,
+        zIndex: 2,
       }} />
 
       <div style={{
         position: 'relative',
-        zIndex: 2,
-        maxWidth: '72rem',
+        zIndex: 3,
+        maxWidth: '1200px',
         margin: '0 auto',
-        padding: '5rem 1.5rem 4rem',
         width: '100%',
+        padding: '4rem 2.5rem 3rem',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: '3rem',
+        alignItems: 'center',
       }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '3rem',
-          alignItems: 'center',
-        }}>
-
-          {/* Left: Main content */}
-          <div style={{ maxWidth: '660px' }}>
-            {/* Overline */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              custom={0}
-              variants={fadeUp}
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', width: 28, height: 20, borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
-                <div style={{ flex: 1, background: '#005BBB' }} />
-                <div style={{ flex: 1, background: '#FFD500' }} />
-              </div>
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '0.75rem',
-                color: '#64748B',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}>
-                Academic Thesis · Open Access · {bookData?.year || 2024}
-              </span>
-            </motion.div>
-
-            {/* Title */}
-            <motion.h1
-              initial="hidden"
-              animate="visible"
-              custom={0.1}
-              variants={fadeUp}
-              style={{
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
-                fontWeight: 600,
-                lineHeight: 1.08,
-                letterSpacing: '-0.025em',
-                color: '#F0F4FA',
-                marginBottom: '0.5rem',
-              }}
-              data-testid="hero-title"
-            >
-              {bookData?.title || 'The Diia Thesis'}
-            </motion.h1>
-
-            {/* UA accent line */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              custom={0.15}
-              variants={fadeUp}
-              className="ua-accent-line"
-              style={{ marginBottom: '1.25rem' }}
-            />
-
-            {/* Subtitle */}
-            <motion.p
-              initial="hidden"
-              animate="visible"
-              custom={0.2}
-              variants={fadeUp}
-              style={{
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
-                fontWeight: 300,
-                color: '#94A3B8',
-                lineHeight: 1.5,
-                marginBottom: '1.75rem',
-                maxWidth: '60ch',
-              }}
-            >
-              {bookData?.subtitle || 'AI, Digital Government, and the Future of Civic Intelligence — From Ukraine to the World'}
-            </motion.p>
-
-            {/* Description */}
-            <motion.p
-              initial="hidden"
-              animate="visible"
-              custom={0.28}
-              variants={fadeUp}
-              style={{
-                fontSize: '0.9375rem',
-                color: '#64748B',
-                lineHeight: 1.7,
-                marginBottom: '2rem',
-                maxWidth: '64ch',
-              }}
-            >
-              {bookData?.description || 'A rigorous academic thesis examining Ukraine\'s Diia platform as a global model for civic AI, exploring the balance between citizen empowerment and state control.'}
-            </motion.p>
-
-            {/* Theme pills */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              custom={0.35}
-              variants={fadeUp}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '2.5rem' }}
-            >
-              {THEME_PILLS.map(pill => (
-                <span
-                  key={pill}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px 12px',
-                    borderRadius: '99px',
-                    border: '1px solid rgba(0,91,187,0.35)',
-                    background: 'rgba(0,91,187,0.1)',
-                    color: '#93C5FD',
-                    fontSize: '0.75rem',
-                    fontFamily: "'IBM Plex Sans', sans-serif",
-                    fontWeight: 500,
-                    letterSpacing: '0.01em',
-                  }}
-                >
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#FFD500', flexShrink: 0 }} />
-                  {pill}
-                </span>
-              ))}
-            </motion.div>
-
-            {/* CTAs */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              custom={0.42}
-              variants={fadeUp}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
-            >
-              <Button
-                onClick={scrollToRead}
-                data-testid="hero-read-now-button"
-                size="lg"
-                style={{
-                  background: '#005BBB',
-                  color: '#FFFFFF',
-                  fontFamily: "'IBM Plex Sans', sans-serif",
-                  fontWeight: 500,
-                  fontSize: '0.9375rem',
-                  padding: '0 28px',
-                  height: '48px',
-                  gap: '8px',
-                  boxShadow: '0 4px 20px rgba(0,91,187,0.35)',
-                }}
-              >
-                <BookOpen size={18} />
-                Read the Thesis
-              </Button>
-
-              <a
-                href={pdfUrl}
-                download="The_Diia_Thesis.pdf"
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: 'none' }}
-              >
-                <Button
-                  variant="outline"
-                  data-testid="hero-download-pdf-button"
-                  size="lg"
-                  style={{
-                    borderColor: 'rgba(255,213,0,0.4)',
-                    color: '#FFD500',
-                    fontFamily: "'IBM Plex Sans', sans-serif",
-                    fontWeight: 500,
-                    fontSize: '0.9375rem',
-                    padding: '0 24px',
-                    height: '48px',
-                    gap: '8px',
-                    background: 'transparent',
-                  }}
-                >
-                  <Download size={16} />
-                  Download PDF
-                </Button>
-              </a>
-            </motion.div>
-          </div>
-
-          {/* Right: Institutional metadata card */}
+        {/* Left: Text content */}
+        <div>
+          {/* Overline */}
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.55, delay: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(0,91,187,0.25)',
-              borderRadius: '12px',
-              padding: '1.75rem',
-              backdropFilter: 'blur(8px)',
-              minWidth: '260px',
-              maxWidth: '360px',
-            }}
-            data-testid="hero-metadata-card"
+            initial="hidden" animate="visible" custom={0} variants={fadeUp}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}
           >
-            <p style={{
+            <div style={{ height: 1, width: 40, background: 'linear-gradient(90deg, #005BBB, #FFD500)', opacity: 0.7 }} />
+            <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '0.6875rem',
-              color: '#64748B',
-              letterSpacing: '0.08em',
+              fontSize: '0.7rem',
+              color: '#8B6340',
+              letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              marginBottom: '1.25rem',
             }}>
-              Document Metadata
-            </p>
+              Academic Thesis · Open Access · {bookData?.year || 2024}
+            </span>
+            <div style={{ height: 1, width: 40, background: 'linear-gradient(90deg, #FFD500, #005BBB)', opacity: 0.7 }} />
+          </motion.div>
 
-            {[
-              { label: 'Document Type', value: 'Academic Thesis' },
-              { label: 'Subject', value: 'Digital Governance · Civic AI' },
-              { label: 'Geographic Focus', value: 'Ukraine → Global' },
-              { label: 'Language', value: bookData?.language || 'English' },
-              { label: 'Access', value: bookData?.license || 'Open Access' },
-              { label: 'Published', value: String(bookData?.year || 2024) },
-            ].map(({ label, value }) => (
-              <div key={label} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '1rem',
-                padding: '10px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+          {/* Main title */}
+          <motion.h1
+            initial="hidden" animate="visible" custom={0.1} variants={fadeUp}
+            data-testid="hero-title"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+              color: '#2C1A0E',
+              marginBottom: '0.25rem',
+            }}
+          >
+            {bookData?.title || 'The Diia Thesis'}
+          </motion.h1>
+
+          {/* Ornamental divider */}
+          <motion.div
+            initial="hidden" animate="visible" custom={0.15} variants={fadeUp}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0.75rem 0 1rem' }}
+          >
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #C4A882, transparent)', maxWidth: 80 }} />
+            <span style={{ color: '#FFD500', fontSize: '1rem' }}>✦</span>
+            <div style={{ width: 30, height: 3, background: '#005BBB', opacity: 0.6, borderRadius: 2 }} />
+            <span style={{ color: '#FFD500', fontSize: '1rem' }}>✦</span>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, #C4A882)', maxWidth: 80 }} />
+          </motion.div>
+
+          {/* Subtitle */}
+          <motion.p
+            initial="hidden" animate="visible" custom={0.2} variants={fadeUp}
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontStyle: 'italic',
+              fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+              color: '#5C3D1E',
+              lineHeight: 1.5,
+              marginBottom: '1.5rem',
+              maxWidth: '58ch',
+            }}
+          >
+            {bookData?.subtitle || 'AI, Digital Government, and the Future of Civic Intelligence — From Ukraine to the World'}
+          </motion.p>
+
+          {/* Description */}
+          <motion.p
+            initial="hidden" animate="visible" custom={0.28} variants={fadeUp}
+            style={{
+              fontFamily: "'Crimson Text', Georgia, serif",
+              fontSize: '1.0625rem',
+              color: '#5C3D1E',
+              lineHeight: 1.75,
+              marginBottom: '2rem',
+              maxWidth: '62ch',
+            }}
+          >
+            {bookData?.description || "A rigorous academic thesis arguing that Ukraine's Diia platform represents a pioneering global laboratory for civic artificial intelligence. Drawing on Cossack democratic traditions, Wojtyla's personalism, and Marxian critique, it asks whether digital government can serve human dignity — or become an instrument of control."}
+          </motion.p>
+
+          {/* Theme pills */}
+          <motion.div
+            initial="hidden" animate="visible" custom={0.35} variants={fadeUp}
+            style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '2.5rem' }}
+          >
+            {THEME_PILLS.map(({ label, color }) => (
+              <span key={label} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '4px 12px',
+                borderRadius: '2px',
+                border: `1px solid ${color}40`,
+                background: `${color}08`,
+                color: color === '#005BBB' ? '#004A9C' : '#6B3412',
+                fontSize: '0.8125rem',
+                fontFamily: "'Crimson Text', serif",
+                fontWeight: 600,
+                letterSpacing: '0.02em',
               }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>
-                  {label}
-                </span>
-                <span style={{ fontSize: '0.8125rem', color: '#CBD5E1', textAlign: 'right', lineHeight: 1.4 }}>
-                  {value}
-                </span>
-              </div>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: color === '#005BBB' ? '#FFD500' : '#005BBB', flexShrink: 0, opacity: 0.8 }} />
+                {label}
+              </span>
             ))}
+          </motion.div>
 
-            {/* Comparison countries */}
-            <div style={{ marginTop: '1.25rem' }}>
-              <p style={{ fontSize: '0.6875rem', color: '#64748B', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                Comparative Cases
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {(bookData?.comparisons || ['Estonia', 'India', 'China', 'Singapore', 'Rwanda', 'Brazil']).map(c => (
-                  <span key={c} style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    background: 'rgba(0,91,187,0.15)',
-                    border: '1px solid rgba(0,91,187,0.2)',
-                    color: '#93C5FD',
-                    fontSize: '0.6875rem',
-                    fontFamily: "'IBM Plex Mono', monospace",
-                  }}>
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
+          {/* CTAs */}
+          <motion.div
+            initial="hidden" animate="visible" custom={0.42} variants={fadeUp}
+            style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}
+          >
+            <button
+              onClick={scrollToRead}
+              data-testid="hero-read-now-button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 28px',
+                background: '#2C1A0E',
+                color: '#FAF8F2',
+                border: 'none',
+                borderRadius: '3px',
+                fontFamily: "'Playfair Display', serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+                boxShadow: '0 4px 16px rgba(44,26,14,0.2)',
+              }}
+            >
+              <BookOpen size={17} />
+              Read the Thesis
+            </button>
+
+            <a
+              href={pdfUrl}
+              download="The_Diia_Thesis.pdf"
+              target="_blank"
+              rel="noreferrer"
+              data-testid="hero-download-pdf-button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                background: 'transparent',
+                color: '#005BBB',
+                border: '1.5px solid #005BBB',
+                borderRadius: '3px',
+                fontFamily: "'Playfair Display', serif",
+                fontSize: '1rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                letterSpacing: '0.01em',
+              }}
+            >
+              <Download size={16} />
+              Download PDF
+            </a>
           </motion.div>
         </div>
 
-        {/* Scroll cue */}
+        {/* Right: Cossack painting */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.5 }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: '6px',
-            marginTop: '4rem',
-          }}
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
+          className="hero-painting-wrapper"
+          style={{ flexShrink: 0 }}
         >
-          <span style={{ fontSize: '0.6875rem', color: '#475569', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Scroll to read
-          </span>
-          <ChevronDown size={16} style={{ color: '#475569', animation: 'bounce 1.8s infinite' }} />
+          <div className="painting-frame gallery-painting" style={{ maxWidth: 280 }}>
+            <img
+              src={HERO_PAINTING}
+              alt="Historical Cossack horseman painting"
+              style={{
+                width: '100%',
+                height: 340,
+                objectFit: 'cover',
+                display: 'block',
+                filter: 'sepia(15%) saturate(110%) contrast(105%)',
+              }}
+            />
+          </div>
+          {/* Caption */}
+          <p style={{
+            textAlign: 'center',
+            marginTop: '8px',
+            fontFamily: "'Crimson Text', serif",
+            fontStyle: 'italic',
+            fontSize: '0.8125rem',
+            color: '#8B6340',
+          }}>
+            Cossack Horseman, oil on canvas
+          </p>
         </motion.div>
       </div>
 
+      {/* Scroll cue */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.4 }}
+        style={{
+          position: 'relative',
+          zIndex: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingBottom: '2rem',
+          gap: '6px',
+        }}
+      >
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.65rem', color: '#C4A882', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          Scroll to read
+        </span>
+        <ChevronDown size={18} style={{ color: '#C4A882', animation: 'cossack-bounce 2s infinite' }} />
+      </motion.div>
+
       <style>{`
-        @keyframes bounce {
+        @keyframes cossack-bounce {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(5px); }
+          50% { transform: translateY(6px); }
+        }
+        @media (max-width: 767px) {
+          .hero-painting-wrapper { display: none; }
+          #home > div { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>
