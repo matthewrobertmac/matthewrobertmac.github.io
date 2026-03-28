@@ -109,6 +109,16 @@ async def health():
     return {"status": "ok", "service": "diia-thesis-api", "timestamp": datetime.utcnow().isoformat()}
 
 
+@app.get("/api/config")
+async def get_config():
+    """Returns site configuration including the YouTube URL."""
+    youtube_url = os.environ.get("YOUTUBE_URL", "")
+    return {
+        "youtube_url": youtube_url,
+        "youtube_configured": bool(youtube_url.strip()),
+    }
+
+
 @app.get("/api/book")
 async def get_book():
     return BOOK_METADATA

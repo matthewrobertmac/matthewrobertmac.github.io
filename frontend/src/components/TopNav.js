@@ -9,7 +9,7 @@ export default function TopNav({ bookData }) {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 32);
-      const sections = ['home', 'read', 'gallery', 'about'];
+      const sections = ['home', 'audiobook', 'toc', 'read', 'gallery', 'about'];
       for (const sec of [...sections].reverse()) {
         const el = document.getElementById(sec);
         if (el) {
@@ -35,7 +35,9 @@ export default function TopNav({ bookData }) {
 
   const navLinks = [
     { id: 'home', label: 'Home' },
-    { id: 'read', label: 'Read the Thesis' },
+    { id: 'audiobook', label: 'Audiobook' },
+    { id: 'toc', label: 'Contents' },
+    { id: 'read', label: 'Read PDF' },
     { id: 'gallery', label: 'Gallery' },
     { id: 'about', label: 'About' },
   ];

@@ -120,6 +120,38 @@ class DiiaThesisAPITester:
         
         return success, response
 
+    def test_config_endpoint(self):
+        """Test /api/config endpoint"""
+        success, response = self.run_test(
+            "Config (YouTube)",
+            "GET",
+            "api/config",
+            200,
+            "application/json"
+        )
+        
+        if success:
+            # Validate config response structure
+            required_fields = ['youtube_url', 'youtube_configured']
+            for field in required_fields:
+                if field in response:
+                    print(f"✅ Config has {field}: {response[field]}")
+                else:
+                    print(f"⚠️  Config missing {field}")
+                    
+            # Check if YouTube is configured correctly (should be false)
+            if response.get('youtube_configured') == False:
+                print("✅ YouTube correctly shows as not configured")
+            else:
+                print(f"⚠️  YouTube configured status: {response.get('youtube_configured')}")
+                
+            if response.get('youtube_url') == "":
+                print("✅ YouTube URL is empty as expected")
+            else:
+                print(f"⚠️  YouTube URL: {response.get('youtube_url')}")
+        
+        return success
+
     def test_pdf_endpoint(self):
         """Test /api/pdf endpoint"""
         success, response = self.run_test(
@@ -149,6 +181,7 @@ def main():
 
     # Run tests
     health_success = tester.test_health_endpoint()
+    config_success = tester.test_config_endpoint()
     book_success, book_data = tester.test_book_endpoint()
     pdf_success = tester.test_pdf_endpoint()
 

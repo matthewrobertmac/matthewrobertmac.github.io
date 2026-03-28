@@ -22,7 +22,7 @@ const THEME_PILLS = [
 
 export default function HeroSection({ bookData }) {
   const scrollToRead = () => {
-    const el = document.getElementById('read');
+    const el = document.getElementById('audiobook');
     if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 68, behavior: 'smooth' });
   };
 
@@ -227,7 +227,7 @@ export default function HeroSection({ bookData }) {
               }}
             >
               <BookOpen size={17} />
-              Read the Thesis
+              Listen & Read
             </button>
 
             <a

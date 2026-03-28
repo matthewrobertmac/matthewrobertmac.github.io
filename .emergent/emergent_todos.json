@@ -1,18 +1,26 @@
 [
   {
-    "content": "Redesign: Complete light Cossack-themed overhaul of all components",
+    "content": "Add YouTube URL config to backend (.env + /api/config endpoint)",
     "status": "completed"
   },
   {
-    "content": "Redesign: Implement page-flip animation for PDF navigation",
+    "content": "Create AudiobookSection.js with YouTube player + Audiobook label",
     "status": "completed"
   },
   {
-    "content": "Redesign: Add Cossack paintings and Ukrainian imagery throughout",
+    "content": "Create TableOfContents.js with beautiful chapter listing",
     "status": "completed"
   },
   {
-    "content": "Redesign: End-to-end testing of new design",
+    "content": "Update PDFReaderSection to fit full viewport height (no scroll for one page)",
     "status": "completed"
+  },
+  {
+    "content": "Update App.js section order",
+    "status": "completed"
+  },
+  {
+    "content": "End-to-end testing",
+    "status": "in_progress"
   }
 ]
