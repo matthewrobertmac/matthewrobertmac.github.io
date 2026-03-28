@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import httpx
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 
